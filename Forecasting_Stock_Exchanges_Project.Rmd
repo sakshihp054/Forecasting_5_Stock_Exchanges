@@ -1,0 +1,1070 @@
+---
+title: "Forecasting of 5 Stock Exchanges with report"
+output: html_notebook
+---
+
+```{r}
+install.packages("tseries")
+install.packages("fBasics")
+install.packages("PerformanceAnalytics")
+install.packages("pracma")
+
+install.packages("rugarch")
+install.packages("FinTS")
+install.packages("e1071")
+install.packages("rmgarch")
+install.packages("devtools")
+install.packages("frequencyConnectedness")
+install.packages("quantmod")
+install.packages("ConnectednessApproach")
+install.packages("urca")
+install.packages("dynlm")
+install.packages("egcm")
+install.packages("quantmod")
+```
+
+```{r}
+library(tseries)
+library(fBasics)
+library(tsDyn)
+
+library(TSstudio)
+library(rcompanion)
+library(forecast)
+library(lmtest)
+library(forecast)
+library(vars)
+library(PerformanceAnalytics)
+library(vrtest)
+library(pracma)
+library(rugarch)
+library(FinTS)
+library(e1071)
+library(rmgarch)
+library(devtools)
+library(frequencyConnectedness)
+library(ConnectednessApproach)
+library(zoo)
+library(urca)
+library(dynlm)
+library(egcm)
+library(quantmod)
+```
+
+**Chosen 5 stock exchanges:**\
+1. **\^NSEI:** National Stock Exchange of India\
+2. **\^GSPC:** Standard & Poor's 500 Index (S&P 500)\
+3. **\^HSI:** Hang Seng Index\
+4. **\^NYA:** New York Stock Exchange Composite Index\
+5. **\^N100:** Nasdaq 100 Index
+
+**Importing all 5 stock exchanges**
+
+```{r}
+symbols <- c("^NSEI", "^GSPC", "^HSI","^NYA","^N100")
+getSymbols(Symbols = symbols,
+           src = 'yahoo',
+           from = as.Date('2018-01-01'),
+           to = as.Date('2023-12-31'),
+           periodicity = 'daily')
+```
+
+**About chosen 5 stock excahnges:**
+
+*1. National Stock Exchange of India (NSEI):*
+
+The NSEI is the largest stock exchange in India by market capitalization. It is a fully electronic exchange that offers trading in equities, derivatives, debt instruments, and mutual funds. The NSEI has a wide range of products and services that cater to the needs of retail and institutional investors.
+
+*2. Standard & Poor's 500 Index (S&P 500):*
+
+The S&P 500 is a stock market index that tracks the performance of 500 large companies listed on the New York Stock Exchange (NYSE) and the Nasdaq. It is widely considered to be a benchmark for the overall U.S. stock market. The S&P 500 is a popular index for investing and is tracked by many mutual funds and exchange-traded funds (ETFs).
+
+*3. Hang Seng Index (HSI):*
+
+The HSI is a stock market index that tracks the performance of the top 50 companies listed on the Hong Kong Stock Exchange (HKEX). It is the most widely tracked index in Hong Kong and is considered to be a benchmark for the Hong Kong stock market. The HSI is a popular index for investing and is tracked by many mutual funds and ETFs.
+
+*4. New York Stock Exchange Composite Index (NYA):*
+
+The NYA is a stock market index that tracks the performance of all common stocks listed on the New York Stock Exchange (NYSE). It is the oldest and largest stock exchange in the United States. The NYA is a popular index for investing and is tracked by many mutual funds and ETFs.
+
+*5. Nasdaq 100 Index (N100):*
+
+The N100 is a stock market index that tracks the performance of the 100 largest non-financial companies listed on the Nasdaq. It is a popular index for investing and is tracked by many mutual funds and ETFs. The N100 is particularly popular for investors who are interested in technology stocks, as many of the companies in the index are in the technology sector.
+
+**Cleaning the data**
+
+```{r}
+#Removing nulls from closing price of data
+NSEI <- na.omit(NSEI$NSEI.Close)
+GSPC <- na.omit(GSPC$GSPC.Close)
+HSI <- na.omit(HSI$HSI.Close)
+NYA <- na.omit(NYA$NYA.Close)
+N100 <- na.omit(N100$N100.Close)
+```
+
+**Taking log returns of data**
+
+```{r}
+#taking log returns
+LRNSEI <- diff(log(NSEI))
+LRGSPC <- diff(log(GSPC))
+LRHSI <- diff(log(HSI))
+LRNYA <- diff(log(NYA))
+LRN100 <- diff(log(N100))
+```
+
+**Checking Stationarity of the Data:**
+
+**Used Test:** Augmented Dicky Fuller's Test
+
+**H0:** The series is not stationary
+
+**H1:** The series is stationary
+
+1.  **NSEI**
+
+```{r}
+#NSEI
+#checking stationarity
+LRNSEI <- diff(log(NSEI))
+LRNSEI <- na.omit(LRNSEI)
+adf.test(LRNSEI)
+#series is stationary
+```
+
+**Explanation:**
+
+p-value = 0.01
+
+p-value for NSEI is \< 0.05
+
+hence we reject the null hypothesis
+
+hence NSEI returns series is stationary i.e. mean, variance, covariance remain constant over time and we can proceed ahead for time series analysis of the returns series
+
+2.  **GSPC**
+
+```{r}
+#GSPC
+#checking stationarity
+LRGSPC <- diff(log(GSPC))
+LRGSPC <- na.omit(LRGSPC)
+adf.test(LRGSPC)
+#series is stationary
+```
+
+**Explanation:**
+
+p-value = 0.01
+
+p-value for GSPC is \< 0.05
+
+hence we reject the null hypothesis
+
+hence GSPC returns series is stationary i.e. mean, variance, covariance remain constant over time and we can proceed ahead for time series analysis of the returns series
+
+3.  **HSI**
+
+```{r}
+#HSI
+#checking stationarity
+LRHSI <- diff(log(HSI))
+LRHSI <- na.omit(LRHSI)
+adf.test(LRHSI)
+#series is stationary
+```
+
+**Explanation:**
+
+p-value = 0.01
+
+p-value for HSI is \< 0.05
+
+hence we reject the null hypothesis
+
+hence HSI returns series is stationary i.e. mean, variance, covariance remain constant over time and we can proceed ahead for time series analysis of the returns series
+
+4.  **NYA**
+
+```{r}
+#NYA
+#checking stationarity
+LRNYA <- diff(log(NYA))
+LRNYA <- na.omit(LRNYA)
+adf.test(LRNYA)
+#series is stationary
+```
+
+**Explanation:**
+
+p-value = 0.01
+
+p-value for NYA is \< 0.05
+
+hence we reject the null hypothesis
+
+hence NYA returns series is stationary i.e. mean, variance, covariance remain constant over time and we can proceed ahead for time series analysis of the returns series
+
+5.  **N100**
+
+```{r}
+#N100
+#checking stationarity
+LRN100 <- diff(log(N100))
+LRN100 <- na.omit(LRN100)
+adf.test(LRN100)
+#series is stationary
+```
+
+**Explanation:**
+
+p-value = 0.01
+
+p-value for N100 is \< 0.05
+
+hence we reject the null hypothesis
+
+hence N100 returns series is stationary i.e. mean, variance, covariance remain constant over time and we can proceed ahead for time series analysis of the returns series
+
+**Descriptives of 5 stock exchanges**
+
+```{r}
+#basic statistics
+basicStats(LRNSEI)
+basicStats(LRGSPC)
+basicStats(LRHSI)
+basicStats(LRNYA)
+basicStats(LRN100)
+```
+
+**Normality Test for all Series:**
+
+**Used Test:** Jarque Bera Test
+
+**H0:** The series is normally ditsributed
+
+**H1:** The series is not normally distributed
+
+```{r}
+#Normality Test
+jarque.bera.test(LRNSEI) #not normal
+jarque.bera.test(LRGSPC) #not normal
+jarque.bera.test(LRHSI) #not normal
+jarque.bera.test(LRNYA) #not normal
+jarque.bera.test(LRN100) #not normal
+```
+
+**Explanation:**
+
+p-value for all 5 series is less than 0.05
+
+hence we reject the null hypothesis and say that all the series are not normally distributed
+
+Implication: all the 5 return series are risky stock exchanges
+
+**Plotting all the 5 stock exchanges**
+
+```{r}
+plotNormalHistogram(LRNSEI)
+plotNormalDensity(LRNSEI)
+plotNormalHistogram(LRGSPC)
+plotNormalDensity(LRGSPC)
+plotNormalHistogram(LRHSI)
+plotNormalDensity(LRHSI)
+plotNormalHistogram(LRNYA)
+plotNormalDensity(LRNYA)
+plotNormalHistogram(LRN100)
+plotNormalDensity(LRN100)
+```
+
+**ARIMA Modelling of Returns Series:**
+
+1.  **NSEI:**
+
+```{r}
+#Plotting ACF & PACF plot
+acf(LRNSEI) 
+pacf(LRNSEI) 
+
+#Using Auto arima to decide the order of series
+arma_pq_LRNSEI = auto.arima(LRNSEI)
+arma_pq_LRNSEI
+
+#Application of ARIMA
+model1 = arima(LRNSEI,order = c(0,0,1))
+model1
+
+et = residuals(model1)
+et
+
+#Checking of significance of ARMA
+coeftest(model1)
+
+#point forecast is called out of sample forecast
+autoplot(forecast(model1, h=500))
+#checking autocorrelation in error term
+checkresiduals(model1) #there is autocorrelation in the error term
+```
+
+**Explanation:**
+
+1.  **Auto ARIMA:** gave order of ARIMA (0,0,1)
+
+    i.e. no autoregressive (AR) terms, no differencing (D) terms, and one moving average (MA) term.
+
+2.  **Log likelihood:** 4489.62. This is a measure of the model's goodness of fit. A higher log likelihood indicates a better fit.
+
+    **AIC:** -8973.24. The Akaike Information Criterion (AIC) is a measure of model complexity and fit. A lower AIC indicates a better model.
+
+    **sigma\^2:** 0.0001335. This is the estimated variance of the residuals, representing the model's ability to fit the data. A smaller value suggests a better fit.
+
+    **Implication:** The ARIMA(0,0,1) model provides a parsimonious representation of the LRNSEI time series. The model suggests that the current value of the series is influenced by the previous period's error.
+
+3.  **The significance test** indicate that the MA1 coefficient in the ARIMA(0,0,1) model is not statistically significant. The intercept coefficient is close to being statistically significant, but more evidence is needed to confirm its significance.
+
+4.  **Autocorrelation Test:**
+
+    Ljung Box Test:
+
+    H0: There is no autocorrelation in error term
+
+    H1: There is autocorrelation in error term
+
+    p-value \< 0.05 suggests that there is autocorrelation in error term of the series.
+
+arma_pq_LRGSPC = auto.arima(LRGSPC)
+
+arma_pq_LRGSPC
+
+model2 = arima(LRNSEI,order = c(4,0,4))
+
+model2
+
+2.  **GSPC:**
+
+```{r}
+acf(LRGSPC) 
+pacf(LRGSPC) 
+
+#Using Auto arima 
+arma_pq_LRGSPC = auto.arima(LRGSPC)
+arma_pq_LRGSPC
+
+#Application of ARIMA
+
+model2 = arima(LRNSEI,order = c(4,0,4))
+model2
+
+et = residuals(model2)
+et
+
+#Checking of significance of ARMA
+coeftest(model2)
+
+#point forecast is called out of sample forecast
+autoplot(forecast(model2, h=500))
+#checking autocorrelation in error term
+checkresiduals(model2) #there is autocorrelation in the error term
+```
+
+**Explanation:**
+
+1.  **Auto ARIMA:** gave order of ARIMA (4,0,4)
+
+    i.e. 4th autoregressive (AR) order, no differencing (D) terms, and fourth moving average (MA) term.
+
+2.  **sigma\^2:** 0.0001281. This is the estimated variance of the residuals, representing the model's ability to fit the data.
+
+    **Log likelihood:** 4519.7. A higher log likelihood indicates a better fit.
+
+    **AIC:** -9019.39. A lower AIC indicates a better model.
+
+    **Implication:** The ARIMA(4,0,4) model provides a more complex representation of the LRNSEI time series compared to the previous model. The model suggests that the current value of the series is influenced by its past values and past errors.
+
+3.  **The significance test** The significance test indicate that the AR2 and MA2 coefficients are statistically significant in the ARIMA(4,0,4) model. The AR3 and MA3 coefficients are close to being significant, but more evidence is needed to confirm their significance.
+
+4.  **Autocorrelation Test:**
+
+    Ljung Box Test:
+
+    H0: There is no autocorrelation in error term
+
+    H1: There is autocorrelation in error term
+
+    p-value \< 0.05 suggests that there is autocorrelation in error term of the series.
+
+<!-- -->
+
+3.  **HSI:**
+
+```{r}
+acf(LRHSI) 
+pacf(LRHSI) 
+
+#Using Auto arima 
+arma_pq_LRHSI = auto.arima(LRHSI)
+arma_pq_LRHSI
+
+#Application of ARIMA
+
+model3 = arima(LRHSI,order = c(0,0,0))
+model3
+
+et = residuals(model3)
+et
+
+#Checking of significance of ARMA
+coeftest(model3)
+
+#point forecast is called out of sample forecast
+autoplot(forecast(model3, h=500))
+#checking autocorrelation in error term
+checkresiduals(model3) #there is no autocorrelation in the error term
+```
+
+**Explanation:**
+
+1.  **Auto ARIMA:** gave order of ARIMA (0,0,0)
+
+    i.e. no autoregressive (AR) terms, no differencing (D) terms, and no moving average (MA) terms.
+
+2.  **sigma\^2**: 0.0002079. This is the estimated variance of the residuals, representing the model's ability to fit the data.
+
+    **Log likelihood:** 4160.01. A higher log likelihood indicates a better fit.
+
+    **AIC:** -8316.03. A lower AIC indicates a better model.
+
+    **Implication:** The ARIMA(0,0,0) model suggests that the LRHSI time series is a white noise process. This indicates that there are no predictable patterns or trends in the data.
+
+3.  **The significance test** The significance test suggests that the intercept coefficient in the ARIMA(0,0,0) model is not statistically significant.
+
+4.  **Autocorrelation Test:**
+
+    Ljung Box Test:
+
+    H0: There is no autocorrelation in error term
+
+    H1: There is autocorrelation in error term
+
+    p-value \< 0.05 suggests that there is autocorrelation in error term of the series.
+
+    4.  **NYA:**
+
+```{r}
+acf(LRNYA) 
+pacf(LRNYA) 
+
+#Using Auto arima 
+arma_pq_LRNYA = auto.arima(LRNYA)
+arma_pq_LRNYA
+
+#Application of ARIMA
+
+model4 = arima(LRNYA,order = c(0,0,2))
+model4
+
+et = residuals(model4)
+et
+
+#Checking of significance of ARMA
+coeftest(model4)
+
+#point forecast is called out of sample forecast
+autoplot(forecast(model4, h=500))
+#checking autocorrelation in error term
+checkresiduals(model4) #there is autocorrelation in the error term
+```
+
+1.  **Auto ARIMA:** gave order of ARIMA (0,0,2)
+
+    i.e. no autoregressive (AR) terms, no differencing (D) terms, and 2nd moving average (MA) order.
+
+2.  **sigma\^2:** 0.0001488. This is the estimated variance of the residuals, representing the model's ability to fit the data.
+
+    **Log likelihood:** 4505.24. A higher log likelihood indicates a better fit.
+
+    **AIC:** -9002.47. A lower AIC indicates a better model.
+
+    **Implication:** The ARIMA(0,0,2) model provides a parsimonious representation of the LRNYA time series. The model suggests that the current value of the series is influenced by the previous two errors.
+
+3.  **The significance test** The z-tests indicate that both the MA1 and MA2 coefficients are statistically significant in the ARIMA(0,0,2) model. This suggests that the current value of the series is significantly influenced by the previous two errors. The intercept coefficient is not statistically significant, indicating that the series has a mean close to zero.
+
+4.  **Autocorrelation Test:**
+
+    Ljung Box Test:
+
+    H0: There is no autocorrelation in error term
+
+    H1: There is autocorrelation in error term
+
+    p-value \< 0.05 suggests that there is autocorrelation in error term of the series.
+
+    5.  **N100**
+
+```{r}
+acf(LRN100) 
+pacf(LRN100) 
+
+#Using Auto arima 
+arma_pq_LRN100 = auto.arima(LRN100)
+arma_pq_LRN100
+
+#Application of ARIMA
+
+model5 = arima(LRN100,order = c(0,0,0))
+model5
+
+et = residuals(model5)
+et
+
+#Checking of significance of ARMA
+coeftest(model5)
+
+#point forecast is called out of sample forecast
+autoplot(forecast(model5, h=500))
+#checking autocorrelation in error term
+checkresiduals(model5) #there is autocorrelation in the error term
+```
+
+1.  **Auto ARIMA:** gave order of ARIMA (0,0,0)
+
+    no autoregressive (AR) terms, no differencing (D) terms, and no moving average (MA) terms.
+
+2.  **sigma\^2:** 0.0001351. This is the estimated variance of the residuals, representing the model's ability to fit the data.
+
+    **Log likelihood:** 4662.94. A higher log likelihood indicates a better fit.
+
+    **AIC:** -9321.89. A lower AIC indicates a better model.
+
+    **Implication:** The ARIMA(0,0,0) model suggests that the LRN100 time series is a white noise process. This indicates that there are no predictable patterns or trends in the data.
+
+3.  **The significance test** The significance test suggests that the intercept coefficient in the ARIMA(0,0,0) model is not statistically significant. This supports the conclusion that the LRN100 series is a white noise process with a mean close to zero.
+
+4.  **Autocorrelation Test:**
+
+    Ljung Box Test:
+
+    H0: There is no autocorrelation in error term
+
+    H1: There is autocorrelation in error term
+
+    p-value \< 0.05 suggests that there is autocorrelation in error term of the series.
+
+**Linearity Test:**
+
+**Used Test:** BDS Test
+
+**H0:** There is linearity in log returns of series
+
+**H1:** There is no linearity in log returns of series
+
+```{r}
+#Linearity Test
+bds.test(LRNSEI) #Non Linear
+bds.test(LRGSPC) #Non Linear
+bds.test(LRHSI) #Non Linear
+bds.test(LRNYA) #Non Linear
+bds.test(LRN100) #Non Linear
+```
+
+**Explanation:**
+
+p-value for all 5 series is less than 0.05
+
+hence we reject the null hypothesis and say that there is no linearity in log returns of any series
+
+Implication: Since series is not linear, a SETAR model might be a more appropriate choice for modeling the log return series. The SETAR model can capture the non-linear relationships and threshold effects present in the data.
+
+```{r}
+VARselect(LRNSEI)
+#AIC lag is 10
+selectSETAR(LRNSEI, m=2, thDelay = 1)
+mod.setar1 = setar(LRNSEI, m=2, thDelay = 1, th= -0.008217482)
+summary(mod.setar1)
+```
+
+**Explanation:**
+
+**AIC order:** 10\
+**Hence Threshold value:** -0.008217482
+
+**Implication:** The SETAR model provides a suitable framework for capturing the non-linear dynamics in the time series data. The results indicate significant differences in the dynamics between the high and low regimes, suggesting that the threshold is an important factor in understanding the series' behavior.
+
+**GSPC:**
+
+```{r}
+VARselect(LRGSPC)
+#AIC lag is 9
+selectSETAR(LRGSPC, m=2, thDelay = 1)
+mod.setar2 = setar(LRGSPC, m=2, thDelay = 1, th= -0.007264115)
+summary(mod.setar2)
+```
+
+**Explanation:**
+
+**AIC order:** 9\
+**Hence Threshold value:** -0.007264115
+
+**Implication:** The SETAR model provides a suitable framework for capturing the non-linear dynamics in the time series data. The results indicate significant differences in the dynamics between the high and low regimes, suggesting that the threshold is an important factor in understanding the series' behavior.
+
+**HSI:**
+
+```{r}
+VARselect(LRHSI)
+#AIC lag is 10
+selectSETAR(LRHSI, m=2, thDelay = 1)
+mod.setar3 = setar(LRHSI, m=2, thDelay = 1, th= -0.01201875)
+summary(mod.setar3)
+```
+
+**Explanation:**
+
+**AIC order:** 10\
+**Hence Threshold value:** -0.01201875
+
+**Implication:** The SETAR model provides a suitable framework for capturing the non-linear dynamics in the time series data. The results indicate significant differences in the dynamics between the high and low regimes, suggesting that the threshold is an important factor in understanding the series' behavior.
+
+**NYA:**
+
+```{r}
+VARselect(LRNYA)
+#AIC lag is 10
+selectSETAR(LRNYA, m=2, thDelay = 1)
+mod.setar4 = setar(LRNYA, m=2, thDelay = 1, th= -0.008660777)
+summary(mod.setar4)
+```
+
+**Explanation:**
+
+**AIC order:** 10\
+**Hence Threshold value:** -0.008660777
+
+**Implication:** The SETAR model provides a suitable framework for capturing the non-linear dynamics in the time series data. The results indicate significant differences in the dynamics between the high and low regimes, suggesting that the threshold is an important factor in understanding the series' behavior.
+
+**N100:**
+
+```{r}
+VARselect(LRN100)
+#AIC lag is 10
+selectSETAR(LRN100, m=2, thDelay = 1)
+mod.setar5 = setar(LRN100, m=2, thDelay = 1, th= -0.006764070)
+summary(mod.setar5)
+```
+
+**Explanation:**
+
+**AIC order:** 10\
+**Hence Threshold value:** -0.006764070
+
+**Implication:** The SETAR model provides a suitable framework for capturing the non-linear dynamics in the time series data. The results indicate significant differences in the dynamics between the high and low regimes, suggesting that the threshold is an important factor in understanding the series' behavior.
+
+**Random Walk and Market Efficiency Check for all 5 returns series:**
+
+**Test 1: Automatic Variance Ratio Test**
+
+H0: follows random walk and has weak form of mkt efficiency i.e. mkt is not predictable
+
+if critical value \> 1.96, we reject the null hypothesis
+
+**Test 2: Automatic Portmanteau Test**
+
+H0: follows random walk and has weak form of mkt efficiency i.e. mkt is not predictable
+
+if critical value \> 1.96, we reject the null hypothesis
+
+**Test 3: Hurst Exponent Test**
+
+H= 0.5 or near : follows random walk
+
+H= 0 or near: short memory
+
+H= 1 or near: long memory
+
+**NSEI:**
+
+```{r}
+#Random Walk
+Auto.VR(LRNSEI) #does not follow random walk model
+Auto.Q(LRNSEI) #follows random walk model and has weak form of market efficiency
+hurstexp(LRNSEI) #follows random walk model
+```
+
+**Explanation:**
+
+Automatic Variance Ratio test suggests series does not follow random walk model
+
+Automatic Portmanteau Test suggests series follows random walk model
+
+Hurst Exponent suggests series follows random walk model
+
+Automatic Variance Ratio test is more reliable hence we say the NSEI returns series **does not follow random walk and stock has some degree of market inefficiency**
+
+**GSPC:**
+
+```{r}
+#Random Walk
+Auto.VR(LRGSPC) #does not follow random walk model
+Auto.Q(LRGSPC) #does not follow random walk model
+hurstexp(LRGSPC) #follows random walk model
+```
+
+**Explanation:**
+
+Automatic Variance Ratio test suggests series does not follow random walk model
+
+Automatic Portmanteau Test suggests series does not follow random walk model
+
+Hurst Exponent suggests series follows random walk model
+
+Automatic Variance Ratio test is more reliable hence we say the GSPC returns series **does not follow random walk and stock has some degree of market inefficiency**
+
+**HSI:**
+
+```{r}
+#Random Walk
+Auto.VR(LRHSI) #follows random walk model and has weak form of market efficiency
+Auto.Q(LRHSI) #follows random walk model and has weak form of market efficiency
+hurstexp(LRHSI) #follows random walk model
+```
+
+**Explanation:**
+
+Automatic Variance Ratio test suggests series follows random walk model
+
+Automatic Portmanteau Test suggests series follows random walk model
+
+Hurst Exponent suggests series follows random walk model
+
+From all three tests we can say the HSI returns series **follows random walk and stock has weak form of market efficiency**
+
+**NYA:**
+
+```{r}
+#Random Walk
+Auto.VR(LRNYA) #does not follow random walk model
+Auto.Q(LRNYA) #does not follow random walk model
+hurstexp(LRNYA) #follows random walk model
+```
+
+**Explanation:**
+
+Automatic Variance Ratio test suggests series does not follow random walk model
+
+Automatic Portmanteau Test suggests series does not follow random walk model
+
+Hurst Exponent suggests series follows random walk model
+
+Automatic Variance Ratio test is more reliable hence we say the NYA returns series **does not follow random walk and stock has some degree of market inefficiency.**
+
+**N100:**
+
+```{r}
+#Random Walk
+Auto.VR(LRN100) #follows random walk model and has weak form of market efficiency
+Auto.Q(LRN100) #follows random walk model and has weak form of market efficiency
+hurstexp(LRN100) #follows random walk model
+```
+
+**Explanation:**
+
+Automatic Variance Ratio test suggests series follows random walk model
+
+Automatic Portmanteau Test suggests series follows random walk model
+
+Hurst Exponent suggests series follows random walk model
+
+From all the 3 tests we say the N100 returns series **follows random walk and stock has weak form of market efficiency**
+
+**ARCH & GARCH Test for all 5 series:**
+
+To include stylised facts of returns series into forecasting, we will move ahead to forecasting with ARCH & GARCH for all of our returns series
+
+**ARCH Test:**
+
+AutoRegressive Conditional Heteroskedasticity Test
+
+H0: There is no ARCH effect in the returns series of data
+
+H1: There is ARCH effect in the returns series of data
+
+**NSEI:**
+
+```{r}
+#step 2: ARCH effect test
+ArchTest(LRNSEI)  #p-value < 0.05, there is ARCH effect
+#there is ARCH effect
+
+# step3: ARCH/GARCH order
+garch(LRNSEI, grad="numerical",trace=FALSE)
+
+#step 4: Application of ARCH and GARCH
+x=ugarchspec(variance.model = list(garchOrder=c(1,1)),mean.model = list(armaOrder=c(0,0)))
+x_fit=ugarchfit(x,data=LRNSEI)
+x_fit
+```
+
+**Explanation:**
+
+ARCH test suggests that there is ARCH effect in the data hence we cam move ahead to do GARCH forecasting of the series
+
+GARCH gave ARCH,GARCH order of 1,1
+
+Sign Bias Test suggest that there is no significant effect of positive and negative bias individually.
+
+but there is collective effect of both the signs on returns of series. hence there is **asymmetry in volatility of returns**
+
+## News Impact Curve
+
+```{r}
+x=newsimpact(x_fit)
+plot(x$zx, x$zy, type="l", lwd=2, col="blue", main="GARCH(1,1) - News Impact", ylab=x$yexpr, xlab=x$xexpr)
+#to check symmetry
+#it is assymetric
+```
+
+## e-GARCH (For asymmetry)
+
+```{r}
+model1=ugarchspec(variance.model = list(model="eGARCH",garchOrder=c(1,1)),mean.model = list(armaOrder=c(0,0)))
+fitmodel=ugarchfit(model1,data=LRNSEI)
+fitmodel
+```
+
+**Explanation:**
+
+e-GARCH test is done when there is asymmetry in volatility of returns and when there is leverage effect
+
+here is **gamma value \> 0** i.e. positive hence there is no leverage effect in the data
+
+hence we cannot forecast with e-GARCH model and hence we will forecast the volatility with GARCH model.
+
+**Forecasting Volatility (NSEI):**
+
+```{r}
+#NSEI
+ugarchforecast(x_fit, n.ahead = 5)
+```
+
+**GSPC:**
+
+```{r}
+#step 2: ARCH effect test
+ArchTest(LRGSPC)  #p-value < 0.05, there is ARCH effect
+#there is ARCH effect
+
+# step3: ARCH/GARCH order
+garch(LRGSPC, grad="numerical",trace=FALSE)
+
+#step 4: Application of ARCH and GARCH
+x=ugarchspec(variance.model = list(garchOrder=c(1,1)),mean.model = list(armaOrder=c(0,0)))
+x_fit1=ugarchfit(x,data=LRGSPC)
+x_fit1
+#assymetric
+```
+
+**Explanation:**
+
+ARCH test suggests that there is ARCH effect in the data hence we can move ahead to do GARCH forecasting of the series
+
+GARCH gave ARCH,GARCH order of 1,1
+
+Sign Bias Test suggest that there is no significant effect of positive and negative bias individually.
+
+but there is collective effect of both the signs on returns of series. hence there is **asymmetry in volatility of returns**
+
+## News Impact Curve
+
+```{r}
+x=newsimpact(x_fit1)
+plot(x$zx, x$zy, type="l", lwd=2, col="blue", main="GARCH(1,1) - News Impact", ylab=x$yexpr, xlab=x$xexpr)
+#to check symmetry#assymetric
+```
+
+## e-GARCH (For asymmetry)
+
+```{r}
+model2=ugarchspec(variance.model = list(model="eGARCH",garchOrder=c(1,1)),mean.model = list(armaOrder=c(0,0)))
+fitmodel1=ugarchfit(model2,data=LRGSPC)
+fitmodel1
+```
+
+**Explanation:**
+
+e-GARCH test is done when there is asymmetry in volatility of returns and when there is leverage effect
+
+here is **gamma value \> 0** i.e. positive hence there is no leverage effect in the data
+
+hence we cannot forecast with e-GARCH model and hence we will forecast the volatility with GARCH model.
+
+**Forecasting Volatility (GSPC):**
+
+```{r}
+#GSPC
+ugarchforecast(x_fit1, n.ahead = 5)
+```
+
+**HSI**
+
+```{r}
+#step 2: ARCH effect test
+ArchTest(LRHSI)  #p-value < 0.05, there is ARCH effect
+#there is ARCH effect
+
+# step3: ARCH/GARCH order
+garch(LRHSI, grad="numerical",trace=FALSE)
+
+#step 4: Application of ARCH and GARCH
+x=ugarchspec(variance.model = list(garchOrder=c(1,1)),mean.model = list(armaOrder=c(0,0)))
+x_fit2=ugarchfit(x,data=LRHSI)
+x_fit2
+#there is no assymetry
+```
+
+**Explanation:**
+
+ARCH test suggests that there is ARCH effect in the data hence we can move ahead to do GARCH forecasting of the series
+
+GARCH gave ARCH,GARCH order of 1,1
+
+The lack of significant overall sign bias and individual sign biases suggests that the **impact of positive and negative shocks on the variance is symmetric**. This means that positive and negative shocks have similar effects on the volatility of the time series.
+
+## News Impact Curve
+
+```{r}
+x=newsimpact(x_fit2)
+plot(x$zx, x$zy, type="l", lwd=2, col="blue", main="GARCH(1,1) - News Impact", ylab=x$yexpr, xlab=x$xexpr)
+#to check symmetry
+```
+
+## e-GARCH (For asymmetricity)
+
+```{r}
+model3=ugarchspec(variance.model = list(model="eGARCH",garchOrder=c(1,1)),mean.model = list(armaOrder=c(0,0)))
+fitmodel2=ugarchfit(model3,data=LRHSI)
+fitmodel2
+```
+
+**Explanation:**
+
+e-GARCH test is done when there is asymmetry in volatility of returns and when there is leverage effect
+
+here is **gamma value \> 0** i.e. positive hence there is no leverage effect in the data
+
+hence we cannot forecast with e-GARCH model and hence we will forecast the volatility with GARCH model.
+
+```{r}
+#NSEI
+ugarchforecast(x_fit2, n.ahead = 5)
+```
+
+**NYA**
+
+```{r}
+#step 2: ARCH effect test
+ArchTest(LRNYA)  #p-value < 0.05, there is ARCH effect
+#there is ARCH effect
+
+# step3: ARCH/GARCH order
+garch(LRNYA, grad="numerical",trace=FALSE)
+
+#step 4: Application of ARCH and GARCH
+x=ugarchspec(variance.model = list(garchOrder=c(1,1)),mean.model = list(armaOrder=c(0,0)))
+x_fit3=ugarchfit(x,data=LRNYA)
+x_fit3
+```
+
+**Explanation:**
+
+ARCH test suggests that there is ARCH effect in the data hence we can move ahead to do GARCH forecasting of the series
+
+GARCH gave ARCH,GARCH order of 1,1
+
+Sign Bias Test suggest that there is no significant effect of positive and negative bias individually.
+
+but there is collective effect of both the signs on returns of series. hence there is **asymmetry in volatility of returns**
+
+## News Impact Curve
+
+```{r}
+x=newsimpact(x_fit3)
+plot(x$zx, x$zy, type="l", lwd=2, col="blue", main="GARCH(1,1) - News Impact", ylab=x$yexpr, xlab=x$xexpr)
+#to check symmetry
+```
+
+## e-GARCH (For asymmetricity)
+
+```{r}
+model4=ugarchspec(variance.model = list(model="eGARCH",garchOrder=c(1,1)),mean.model = list(armaOrder=c(0,0)))
+fitmodel3=ugarchfit(model4,data=LRNYA)
+fitmodel3
+```
+
+**Explanation:**
+
+e-GARCH test is done when there is asymmetry in volatility of returns and when there is leverage effect
+
+here is **gamma value \> 0** i.e. positive hence there is no leverage effect in the data
+
+hence we cannot forecast with e-GARCH model and hence we will forecast the volatility with GARCH model.
+
+**Forecasting Volatility in Returns**
+
+```{r}
+#NYA
+ugarchforecast(x_fit3, n.ahead = 5)
+```
+
+**N100**
+
+```{r}
+#step 2: ARCH effect test
+ArchTest(LRN100)  #p-value < 0.05, there is ARCH effect
+#there is ARCH effect
+
+# step3: ARCH/GARCH order
+garch(LRN100, grad="numerical",trace=FALSE)
+
+#step 4: Application of ARCH and GARCH
+x=ugarchspec(variance.model = list(garchOrder=c(1,1)),mean.model = list(armaOrder=c(0,0)))
+x_fit4=ugarchfit(x,data=LRN100)
+x_fit4
+```
+
+**Explanation:**
+
+ARCH test suggests that there is ARCH effect in the data hence we can move ahead to do GARCH forecasting of the series
+
+GARCH gave ARCH,GARCH order of 1,1
+
+Sign Bias Test suggest that there is no significant effect of positive and negative bias individually.
+
+but there is collective effect of both the signs on returns of series. hence there is **asymmetry in volatility of returns**
+
+## News Impact Curve
+
+```{r}
+x=newsimpact(x_fit4)
+plot(x$zx, x$zy, type="l", lwd=2, col="blue", main="GARCH(1,1) - News Impact", ylab=x$yexpr, xlab=x$xexpr)
+#to check symmetry
+```
+
+## e-GARCH (For asymmetricity)
+
+```{r}
+model5=ugarchspec(variance.model = list(model="eGARCH",garchOrder=c(1,1)),mean.model = list(armaOrder=c(0,0)))
+fitmodel4=ugarchfit(model5,data=LRN100)
+fitmodel4
+```
+
+**Explanation:**
+
+e-GARCH test is done when there is asymmetry in volatility of returns and when there is leverage effect
+
+here is **gamma value \> 0** i.e. positive hence there is no leverage effect in the data
+
+hence we cannot forecast with e-GARCH model and hence we will forecast the volatility with GARCH model.
+
+```{r}
+#NSEI
+ugarchforecast(x_fit4, n.ahead = 5)
+```
